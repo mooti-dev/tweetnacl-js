@@ -10,23 +10,62 @@ function decodeUTF8(s) {
   return b;
 }
 
+var getTime = (function () {
+  if (typeof performance !== "undefined") {
+    return performance.now.bind(performance);
+  }
+  if (typeof process !== "undefined" && process.hrtime) {
+    return function () {
+      var _a = process.hrtime(), sec = _a[0], nanosec = _a[1];
+      return (sec * 1e9 + nanosec) / 1e6;
+    };
+  }
+  return Date.now.bind(Date);
+})();
+
 function benchmark(fn, bytes) {
   var elapsed = 0;
   var iterations = 1;
+  var runsPerIteration = 1;
+  // Run once without measuring anything to possibly kick-off JIT.
+  fn();
   while (true) {
-    var startTime = Date.now();
-    fn();
-    elapsed += Date.now() - startTime;
-    if (elapsed > 500 && iterations > 2) {
-        break;
+    var startTime = void 0;
+    var diff = void 0;
+    if (runsPerIteration === 1) {
+      // Measure one iteration.
+      startTime = getTime();
+      fn();
+      diff = getTime() - startTime;
     }
-    iterations++;
+    else {
+      // Measure many iterations.
+      startTime = getTime();
+      for (var i = 0; i < runsPerIteration; i++) {
+        fn();
+      }
+      diff = getTime() - startTime;
+    }
+    // If diff is too small, double the number of iterations
+    // and start over without recording results.
+    if (diff < 1) {
+      runsPerIteration *= 2;
+      continue;
+    }
+    // Otherwise, record the result.
+    elapsed += diff;
+    if (elapsed > 500 && iterations > 2) {
+      break;
+    }
+    iterations += runsPerIteration;
   }
+  // Calculate average time per iteration.
+  var avg = elapsed / iterations;
   return {
     iterations: iterations,
-    msPerOp: elapsed / iterations,
-    opsPerSecond: 1000 * iterations / elapsed,
-    bytesPerSecond: bytes ? 1000 * (bytes * iterations) / elapsed : undefined
+    msPerOp: avg,
+    opsPerSecond: 1000 / avg,
+    bytesPerSecond: bytes ? 1000 * (bytes * iterations) / (avg * iterations) : undefined
   };
 }
 
