@@ -2136,12 +2136,12 @@ nacl.lowlevel = {
 /* High-level API */
 
 function checkLengths(k, n) {
-  if (k.length !== crypto_secretbox_KEYBYTES) throw new Error('bad key size');
-  if (n.length !== crypto_secretbox_NONCEBYTES) throw new Error('bad nonce size');
+  if (k.length !== crypto_secretbox_KEYBYTES) throw new Error('bad key size - ' + JSON.stringify(k));
+  if (n.length !== crypto_secretbox_NONCEBYTES) throw new Error('bad nonce size - ' + JSON.stringify(n));
 }
 
 function checkBoxLengths(pk, sk) {
-  if (pk.length !== crypto_box_PUBLICKEYBYTES) throw new Error('bad public key size');
+  if (pk.length !== crypto_box_PUBLICKEYBYTES) throw new Error('bad public key size - ' + JSON.stringify(pk));
   if (sk.length !== crypto_box_SECRETKEYBYTES) throw new Error('bad secret key size');
 }
 
@@ -2189,8 +2189,8 @@ nacl.secretbox.overheadLength = crypto_secretbox_BOXZEROBYTES;
 
 nacl.scalarMult = function(n, p) {
   checkArrayTypes(n, p);
-  if (n.length !== crypto_scalarmult_SCALARBYTES) throw new Error('bad n size');
-  if (p.length !== crypto_scalarmult_BYTES) throw new Error('bad p size');
+  if (n.length !== crypto_scalarmult_SCALARBYTES) throw new Error('bad n size - ' + JSON.stringify(n));
+  if (p.length !== crypto_scalarmult_BYTES) throw new Error('bad p size - ' + JSON.stringify(p));
   var q = new Uint8Array(crypto_scalarmult_BYTES);
   crypto_scalarmult(q, n, p);
   return q;
@@ -2198,7 +2198,7 @@ nacl.scalarMult = function(n, p) {
 
 nacl.scalarMult.base = function(n) {
   checkArrayTypes(n);
-  if (n.length !== crypto_scalarmult_SCALARBYTES) throw new Error('bad n size');
+  if (n.length !== crypto_scalarmult_SCALARBYTES) throw new Error('bad n size - ' + JSON.stringify(n));
   var q = new Uint8Array(crypto_scalarmult_BYTES);
   crypto_scalarmult_base(q, n);
   return q;
@@ -2263,7 +2263,7 @@ nacl.sign = function(msg, secretKey) {
 nacl.sign.open = function(signedMsg, publicKey) {
   checkArrayTypes(signedMsg, publicKey);
   if (publicKey.length !== crypto_sign_PUBLICKEYBYTES)
-    throw new Error('bad public key size');
+    throw new Error('bad public key size - ' + JSON.stringify(publicKey));
   var tmp = new Uint8Array(signedMsg.length);
   var mlen = crypto_sign_open(tmp, signedMsg, signedMsg.length, publicKey);
   if (mlen < 0) return null;
@@ -2282,9 +2282,9 @@ nacl.sign.detached = function(msg, secretKey) {
 nacl.sign.detached.verify = function(msg, sig, publicKey) {
   checkArrayTypes(msg, sig, publicKey);
   if (sig.length !== crypto_sign_BYTES)
-    throw new Error('bad signature size');
+    throw new Error('bad signature size - ' + JSON.stringify(sig));
   if (publicKey.length !== crypto_sign_PUBLICKEYBYTES)
-    throw new Error('bad public key size');
+    throw new Error('bad public key size - ' + JSON.stringify(publicKey));
   var sm = new Uint8Array(crypto_sign_BYTES + msg.length);
   var m = new Uint8Array(crypto_sign_BYTES + msg.length);
   var i;
@@ -2312,7 +2312,7 @@ nacl.sign.keyPair.fromSecretKey = function(secretKey) {
 nacl.sign.keyPair.fromSeed = function(seed) {
   checkArrayTypes(seed);
   if (seed.length !== crypto_sign_SEEDBYTES)
-    throw new Error('bad seed size');
+    throw new Error('bad seed size - ' + JSON.stringify(seed));
   var pk = new Uint8Array(crypto_sign_PUBLICKEYBYTES);
   var sk = new Uint8Array(crypto_sign_SECRETKEYBYTES);
   for (var i = 0; i < 32; i++) sk[i] = seed[i];
